@@ -12,7 +12,7 @@
         android:layout_height="40dp"
         android:layout_marginStart="8dp"
         android:gravity="center"
-        android:text="Imię - Nazwisko - Wiek - Grupa"
+        android:text="ID - Imię - Nazwisko - Wiek - Grupa"
         app:layout_constraintStart_toStartOf="parent"
         tools:layout_editor_absoluteY="4dp" />
 

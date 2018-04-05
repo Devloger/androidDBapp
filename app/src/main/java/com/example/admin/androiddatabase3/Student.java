@@ -22,6 +22,6 @@ public class Student extends SugarRecord<Student> {
 
     @Override
     public String toString() {
-        return this.imie + " " + this.nazwisko + " - " + this.wiek + " lat | " + this.grupa;
+        return this.id + " - " + this.imie + " " + this.nazwisko + " - " + this.wiek + " lat | " + this.grupa;
     }
 }
