@@ -27,15 +27,33 @@ import java.util.List;
 public class Tab1Studenci extends Fragment implements OnClickListener {
 
     ListView studenciListView;
-    ArrayAdapter<String> studenciListaAdapter;
+    MyListAdaper studenciListaAdapter;
 
     EditText imie;
     EditText nazwisko;
     EditText wiek;
     Spinner grupa;
+    long id = 0;
+
+    Button dodaj;
+    Button aktualizuj;
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+
+//        Grupa.deleteAll(Grupa.class);
+////        Student.deleteAll(Student.class);
+//
+        if(Grupa.listAll(Grupa.class).isEmpty())
+        {
+            Grupa grupa = new Grupa("13INF-SP");
+            Grupa grupa2 = new Grupa("14INF-SP");
+            Grupa grupa3 = new Grupa("15INF-SP");
+
+            grupa.save();
+            grupa2.save();
+            grupa3.save();
+        }
 
 //        Grupa grupa = new Grupa("32INF-SP");
 //        Grupa grupa2 = new Grupa("12INF-SP");
@@ -66,43 +84,17 @@ public class Tab1Studenci extends Fragment implements OnClickListener {
         grupa = (Spinner) getView().findViewById(R.id.grupa);
 
 
-
-
-
         studenciListView = (ListView) getView().findViewById(R.id.lista);
         List<Student> studenci = Student.listAll(Student.class);
 
 //        studenciListaAdapter = new ArrayAdapter(getActivity(), R.layout.studenci_list_view_layout, R.id.textView ,studenci);
+        studenciListaAdapter = new MyListAdaper(getContext(), R.layout.studenci_list_view_layout, studenci, this);
 
-        studenciListView.setAdapter(new MyListAdaper(getContext(), R.layout.studenci_list_view_layout, studenci));
-//        studenciListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//            @Override
-//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//                System.out.println("keke");
-//            }
-//        });
+        studenciListView.setAdapter(studenciListaAdapter);
 
-//        studenciListView.setAdapter(studenciListaAdapter);
-
-
-
-//        Button bur = (Button) studenciListView.findViewById(R.id.lista);
-//
-//        bur.setOnClickListener(new OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                                            System.out.println("asd");
-//
-//            }
-//        });
-
-//        studenciListView.setOnClickListener(new OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                            System.out.println("asd");
-//            }
-//        });
     }
+
+
 
     private void setSpinner() {
         List<Grupa> grupy = Grupa.listAll(Grupa.class);
@@ -117,8 +109,14 @@ public class Tab1Studenci extends Fragment implements OnClickListener {
 
         View view = inflater.inflate(R.layout.studenci, container, false);
 
-        Button dodaj = (Button) view.findViewById(R.id.dodaj);
+        dodaj = (Button) view.findViewById(R.id.dodaj);
         dodaj.setOnClickListener(this);
+        aktualizuj = (Button) view.findViewById(R.id.aktualizuj);
+        aktualizuj.setOnClickListener(this);
+
+        aktualizuj.setClickable(false);
+        aktualizuj.setAlpha(0);
+
 
         return view;
     }
@@ -127,7 +125,7 @@ public class Tab1Studenci extends Fragment implements OnClickListener {
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.dodaj:
-                Grupa grupka = Grupa.find(Grupa.class,"nazwa = ?", grupa.getSelectedItem().toString()).get(1);
+                Grupa grupka = Grupa.find(Grupa.class,"nazwa = ?", grupa.getSelectedItem().toString()).get(0);
                 Student student = new Student(
                         imie.getText().toString(),
                         nazwisko.getText().toString(),
@@ -135,6 +133,36 @@ public class Tab1Studenci extends Fragment implements OnClickListener {
                         grupka
                 );
                 student.save();
+
+                imie.setText("");
+                nazwisko.setText("");
+                wiek.setText("");
+
+                studenciListaAdapter.notifyDataSetChanged();
+                studenciListView.invalidateViews();
+                break;
+            case R.id.aktualizuj:
+                Grupa grupkaa = Grupa.find(Grupa.class,"nazwa = ?", grupa.getSelectedItem().toString()).get(0);
+                Student studentt = Student.findById(Student.class, id);
+                studentt.imie = imie.getText().toString();
+                studentt.nazwisko = nazwisko.getText().toString();
+                studentt.wiek = Integer.parseInt(wiek.getText().toString());
+                studentt.grupa = grupkaa;
+                studentt.save();
+
+                imie.setText("");
+                nazwisko.setText("");
+                wiek.setText("");
+
+//                studenciListaAdapter = new MyListAdaper(getContext(), R.layout.studenci_list_view_layout, Student.listAll(Student.class), this);
+//                studenciListView.setAdapter(studenciListaAdapter);
+
+                dodaj.setClickable(true);
+                dodaj.setAlpha(1);
+
+                aktualizuj.setClickable(false);
+                aktualizuj.setAlpha(0);
+
                 studenciListaAdapter.notifyDataSetChanged();
                 studenciListView.invalidateViews();
                 break;
@@ -142,6 +170,13 @@ public class Tab1Studenci extends Fragment implements OnClickListener {
                 System.out.println("usuwa");
                 break;
         }
+
+    }
+
+    public void refresh()
+    {
+        studenciListaAdapter.notifyDataSetChanged();
+        studenciListView.invalidateViews();
     }
 
 
@@ -149,10 +184,19 @@ public class Tab1Studenci extends Fragment implements OnClickListener {
     private class MyListAdaper extends ArrayAdapter<Student> {
         private int layout;
         private List<Student> mObjects;
-        private MyListAdaper(Context context, int resource, List<Student> objects) {
+        private Tab1Studenci tab;
+        private MyListAdaper(Context context, int resource, List<Student> objects, Tab1Studenci tab1) {
             super(context, resource, objects);
             mObjects = objects;
             layout = resource;
+            tab = tab1;
+        }
+
+        @Override
+        public void notifyDataSetChanged() {
+            mObjects.clear();
+            mObjects.addAll(Student.listAll(Student.class));
+            super.notifyDataSetChanged();
         }
 
         @Override
@@ -163,22 +207,49 @@ public class Tab1Studenci extends Fragment implements OnClickListener {
                 convertView = inflater.inflate(layout, parent, false);
                 ViewHolder viewHolder = new ViewHolder();
                 viewHolder.title = (TextView) convertView.findViewById(R.id.textView);
-                viewHolder.button = (Button) convertView.findViewById(R.id.usun);
+                viewHolder.usun = (Button) convertView.findViewById(R.id.usun);
+                viewHolder.edytuj = (Button) convertView.findViewById(R.id.edytuj);
                 convertView.setTag(viewHolder);
             }
             mainViewholder = (ViewHolder) convertView.getTag();
-            mainViewholder.button.setOnClickListener(new View.OnClickListener() {
+            mainViewholder.usun.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     Student studento = Student.findById(Student.class, mObjects.get(position).getId());
                     studento.delete();
 
+                    tab.refresh();
+
+
 //                    System.out.println("Oke");
 //                    Toast.makeText(getContext(), "Button was clicked for list item " + position, Toast.LENGTH_SHORT).show();
                 }
             });
+            mainViewholder.edytuj.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Student studento = Student.findById(Student.class, mObjects.get(position).getId());
+                    tab.imie.setText(studento.imie);
+                    tab.nazwisko.setText(studento.nazwisko);
+                    tab.wiek.setText(String.valueOf(studento.wiek));
+
+                    tab.id = studento.getId();
+
+                    tab.dodaj.setClickable(false);
+                    tab.dodaj.setAlpha(0);
+
+                    tab.aktualizuj.setClickable(true);
+                    tab.aktualizuj.setAlpha(1);
+
+                    tab.refresh();
+                }
+            });
             mainViewholder.title.setText(mObjects.get(position).toString());
             mainViewholder.id = mObjects.get(position).getId();
+            mainViewholder.imie = mObjects.get(position).imie;
+            mainViewholder.nazwisko = mObjects.get(position).nazwisko;
+            mainViewholder.wiek = mObjects.get(position).wiek;
+            mainViewholder.grupa = mObjects.get(position).grupa;
 
             return convertView;
         }
@@ -186,7 +257,12 @@ public class Tab1Studenci extends Fragment implements OnClickListener {
     public class ViewHolder {
 
         TextView title;
-        Button button;
+        Button usun;
+        Button edytuj;
         long id;
+        String imie;
+        String nazwisko;
+        int wiek;
+        Grupa grupa;
     }
 }
